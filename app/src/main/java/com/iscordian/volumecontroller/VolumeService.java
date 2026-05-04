@@ -20,11 +20,11 @@ public class VolumeService extends Service {
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
             }
         }
-        updateNotification(am);
+        showNotification(am);
         return START_STICKY;
     }
 
-    private void updateNotification(AudioManager am) {
+    private void showNotification(AudioManager am) {
         int current = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         int percent = (current * 100) / max;
@@ -32,21 +32,25 @@ public class VolumeService extends Service {
         RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_layout);
         views.setTextViewText(R.id.volume_text, "Tap buttons to adjust volume (" + percent + "%)");
 
-        Intent up = new Intent(this, VolumeService.class).setAction("UP");
-        views.setOnClickPendingIntent(R.id.btn_up, PendingIntent.getService(this, 0, up, PendingIntent.FLAG_UPDATE_CURRENT));
+        // Use FLAG_IMMUTABLE for modern Android, or 0 for your Android 5.1
+        Intent upIntent = new Intent(this, VolumeService.class).setAction("UP");
+        PendingIntent pUp = PendingIntent.getService(this, 0, upIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        views.setOnClickPendingIntent(R.id.btn_up, pUp);
 
-        Intent down = new Intent(this, VolumeService.class).setAction("DOWN");
-        views.setOnClickPendingIntent(R.id.btn_down, PendingIntent.getService(this, 1, down, PendingIntent.FLAG_UPDATE_CURRENT));
+        Intent downIntent = new Intent(this, VolumeService.class).setAction("DOWN");
+        PendingIntent pDown = PendingIntent.getService(this, 1, downIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        views.setOnClickPendingIntent(R.id.btn_down, pDown);
 
         Notification notification = new Notification.Builder(this)
                 .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
                 .setContent(views)
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_MAX)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .build();
 
         startForeground(1, notification);
     }
 
     @Override public IBinder onBind(Intent i) { return null; }
-    }
+                       }
