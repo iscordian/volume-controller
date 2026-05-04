@@ -10,13 +10,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Start the volume service
+        // Corrected: Just use startService(intent)
         Intent intent = new Intent(this, VolumeService.class);
-        startContext.startService(intent);
+        startService(intent);
         
         Toast.makeText(this, "Volume Controller Activated", Toast.LENGTH_SHORT).show();
         
-        // Close the activity immediately to keep it clean
         finish();
     }
 }
