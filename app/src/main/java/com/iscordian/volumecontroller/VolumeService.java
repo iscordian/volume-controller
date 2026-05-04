@@ -13,13 +13,16 @@ public class VolumeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        
         if (intent != null && intent.getAction() != null) {
-            if (intent.getAction().equals("UP")) {
+            String action = intent.getAction();
+            if (action.equals("UP")) {
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-            } else if (intent.getAction().equals("DOWN")) {
+            } else if (action.equals("DOWN")) {
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
             }
         }
+
         showNotification(am);
         return START_STICKY;
     }
@@ -27,12 +30,12 @@ public class VolumeService extends Service {
     private void showNotification(AudioManager am) {
         int current = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        int percent = (current * 100) / max;
+        int percent = (max > 0) ? (current * 100) / max : 0;
 
         RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_layout);
         views.setTextViewText(R.id.volume_text, "Tap buttons to adjust volume (" + percent + "%)");
 
-        // Use FLAG_IMMUTABLE for modern Android, or 0 for your Android 5.1
+        // Use 0 for flags to be safe on Android 5.1
         Intent upIntent = new Intent(this, VolumeService.class).setAction("UP");
         PendingIntent pUp = PendingIntent.getService(this, 0, upIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_up, pUp);
@@ -41,16 +44,15 @@ public class VolumeService extends Service {
         PendingIntent pDown = PendingIntent.getService(this, 1, downIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_down, pDown);
 
-        Notification notification = new Notification.Builder(this)
+        // Standard Android 5.1 Builder
+        Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
                 .setContent(views)
                 .setOngoing(true)
-                .setPriority(Notification.PRIORITY_MAX)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .build();
+                .setPriority(Notification.PRIORITY_MAX);
 
-        startForeground(1, notification);
+        startForeground(1, builder.build());
     }
 
     @Override public IBinder onBind(Intent i) { return null; }
-                       }
+    }
