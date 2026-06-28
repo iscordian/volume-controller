@@ -10,6 +10,10 @@ import android.os.IBinder;
 import android.widget.RemoteViews;
 
 public class VolumeService extends Service {
+    
+    private static long lastClickTime = 0;
+    private static final long DOUBLE_CLICK_TIME_DELTA = 350; // Milliseconds timeframe for double-click
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -20,6 +24,14 @@ public class VolumeService extends Service {
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
             } else if (action.equals("DOWN")) {
                 am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+            } else if (action.equals("POWER_CLICK")) {
+                long clickTime = System.currentTimeMillis();
+                if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
+                    // Double click confirmed, dispatch execution intent to our running accessibility profile
+                    Intent powerMenuIntent = new Intent(this, PowerMenuService.class).setAction("SHOW_POWER_MENU");
+                    startService(powerMenuIntent);
+                }
+                lastClickTime = clickTime;
             }
         }
 
@@ -35,7 +47,6 @@ public class VolumeService extends Service {
         RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_layout);
         views.setTextViewText(R.id.volume_text, "Tap buttons to adjust volume (" + percent + "%)");
 
-        // Use 0 for flags to be safe on Android 5.1
         Intent upIntent = new Intent(this, VolumeService.class).setAction("UP");
         PendingIntent pUp = PendingIntent.getService(this, 0, upIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_up, pUp);
@@ -44,7 +55,11 @@ public class VolumeService extends Service {
         PendingIntent pDown = PendingIntent.getService(this, 1, downIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_down, pDown);
 
-        // Standard Android 5.1 Builder
+        // Binding for the target Power Layout Component click
+        Intent powerIntent = new Intent(this, VolumeService.class).setAction("POWER_CLICK");
+        PendingIntent pPower = PendingIntent.getService(this, 2, powerIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        views.setOnClickPendingIntent(R.id.btn_power, pPower);
+
         Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
                 .setContent(views)
@@ -55,4 +70,4 @@ public class VolumeService extends Service {
     }
 
     @Override public IBinder onBind(Intent i) { return null; }
-    }
+            }
