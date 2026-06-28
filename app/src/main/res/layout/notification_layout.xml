@@ -54,4 +54,14 @@
         android:textSize="24sp"
         android:gravity="center"
         android:background="?android:attr/selectableItemBackground" />
+
+    <TextView
+        android:id="@+id/btn_power"
+        android:layout_width="48dp"
+        android:layout_height="match_parent"
+        android:text="×"
+        android:textColor="#E53935"
+        android:textSize="24sp"
+        android:gravity="center"
+        android:background="?android:attr/selectableItemBackground" />
 </LinearLayout>
